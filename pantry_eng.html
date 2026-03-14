@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0d1117">
+<title>🛒 Our List</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --card:      #21262d;
+    --border:    #30363d;
+    --accent:    #58a6ff;
+    --green:     #3fb950;
+    --red:       #f85149;
+    --amber:     #d29922;
+    --text:      #f0f6fc;
+    --muted:     #8b949e;
+    --strike:    #484f58;
+    --radius:    16px;
+    --font:      'Manrope', sans-serif;
+    --mono:      'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* ── Setup overlay ── */
+  #setup-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 100;
+    display: flex; flex-direction: column;
+    padding: 24px 20px;
+    overflow-y: auto;
+  }
+  #setup-overlay.hidden { display: none; }
+
+  .setup-logo {
+    font-size: 40px; text-align: center; margin: 20px 0 8px;
+  }
+  .setup-title {
+    font-size: 26px; font-weight: 800;
+    text-align: center; margin-bottom: 6px;
+  }
+  .setup-sub {
+    color: var(--muted); text-align: center;
+    font-size: 14px; margin-bottom: 32px; line-height: 1.5;
+  }
+
+  .setup-step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: #000;
+    font-weight: 800; font-size: 13px;
+    margin-bottom: 10px;
+  }
+  .step-title {
+    font-weight: 700; font-size: 15px; margin-bottom: 8px;
+  }
+  .step-body {
+    font-size: 13px; color: var(--muted); line-height: 1.6;
+  }
+  .step-body code {
+    font-family: var(--mono);
+    background: var(--card);
+    color: var(--accent);
+    padding: 2px 6px; border-radius: 4px;
+    font-size: 12px;
+  }
+  .step-body a {
+    color: var(--accent); text-decoration: none;
+  }
+
+  .setup-input-group { margin-top: 12px; }
+  .setup-label {
+    display: block; font-size: 12px;
+    color: var(--muted); margin-bottom: 6px;
+    font-family: var(--mono); text-transform: uppercase; letter-spacing: .05em;
+  }
+  .setup-input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .setup-input:focus { border-color: var(--accent); }
+
+  .setup-name-row {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .name-btn {
+    flex: 1; padding: 14px;
+    border-radius: 12px; border: 2px solid var(--border);
+    background: var(--card); color: var(--muted);
+    font-family: var(--font); font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all .2s;
+  }
+  .name-btn.active {
+    border-color: var(--accent); color: var(--accent);
+    background: rgba(88,166,255,.08);
+  }
+
+  .btn-save-setup {
+    width: 100%; margin-top: 24px; margin-bottom: 32px;
+    padding: 18px;
+    background: var(--accent); color: #000;
+    border: none; border-radius: var(--radius);
+    font-family: var(--font); font-size: 17px; font-weight: 800;
+    cursor: pointer; transition: opacity .2s;
+  }
+  .btn-save-setup:active { opacity: .8; }
+
+  /* ── Main app ── */
+  #app { display: flex; flex-direction: column; min-height: 100dvh; }
+  #app.hidden { display: none; }
+
+  /* Header */
+  .app-header {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(13,17,23,.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px 12px;
+  }
+  .header-row {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .app-title {
+    font-size: 22px; font-weight: 800; letter-spacing: -.03em;
+  }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .user-chip {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 10px;
+    color: var(--muted);
+  }
+  .settings-btn {
+    background: none; border: none; font-size: 20px;
+    cursor: pointer; padding: 4px; line-height: 1;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: 1; min-width: 80px;
+    padding: 12px 8px;
+    font-family: var(--font); font-size: 13px; font-weight: 600;
+    color: var(--muted); background: none; border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer; transition: all .2s; white-space: nowrap;
+    text-align: center;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Content */
+  .content { flex: 1; padding: 16px; max-width: 600px; margin: 0 auto; width: 100%; }
+
+  /* Status bar */
+  .status-bar {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-family: var(--mono);
+    color: var(--muted); margin-bottom: 16px;
+    padding: 8px 12px; background: var(--surface);
+    border-radius: 10px; border: 1px solid var(--border);
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green); flex-shrink: 0;
+  }
+  .status-dot.error { background: var(--red); }
+  .status-dot.loading { background: var(--amber); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* Add item bar */
+  .add-bar {
+    display: flex; gap: 8px; margin-bottom: 20px;
+  }
+  .add-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 17px; font-weight: 600;
+    padding: 16px 18px;
+    outline: none; transition: border-color .2s;
+  }
+  .add-input:focus { border-color: var(--accent); }
+  .add-input::placeholder { color: var(--muted); font-weight: 400; }
+
+  .qty-input {
+    width: 72px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 15px;
+    padding: 16px 10px;
+    outline: none; text-align: center;
+    transition: border-color .2s;
+  }
+  .qty-input:focus { border-color: var(--accent); }
+
+  .add-btn {
+    width: 56px; height: 56px; flex-shrink: 0;
+    background: var(--accent); color: #000;
+    border: none; border-radius: 14px;
+    font-size: 26px; font-weight: 700;
+    cursor: pointer; transition: opacity .15s, transform .1s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .add-btn:active { opacity: .8; transform: scale(.95); }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px; font-family: var(--mono);
+    text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); margin-bottom: 10px; padding-left: 2px;
+  }
+
+  /* Items list */
+  .items-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .item-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 16px;
+    display: flex; align-items: center; gap: 12px;
+    transition: opacity .3s, transform .3s;
+    animation: slideIn .25s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .item-card.done { opacity: .45; }
+
+  .check-btn {
+    width: 32px; height: 32px; flex-shrink: 0;
+    border-radius: 50%; border: 2px solid var(--border);
+    background: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; transition: all .2s;
+  }
+  .check-btn.checked {
+    background: var(--green); border-color: var(--green); color: #fff;
+  }
+
+  .item-text {
+    flex: 1;
+  }
+  .item-name {
+    font-size: 19px; font-weight: 700; line-height: 1.2;
+    transition: color .2s;
+  }
+  .item-card.done .item-name {
+    text-decoration: line-through; color: var(--strike);
+  }
+  .item-meta {
+    font-size: 12px; font-family: var(--mono);
+    color: var(--muted); margin-top: 3px;
+  }
+
+  .item-actions { display: flex; gap: 6px; }
+  .del-btn {
+    width: 36px; height: 36px;
+    background: rgba(248,81,73,.1); border: none;
+    border-radius: 10px; color: var(--red);
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s;
+  }
+  .del-btn:active { background: rgba(248,81,73,.25); }
+
+  /* Empty state */
+  .empty {
+    text-align: center; padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-icon { font-size: 52px; margin-bottom: 12px; }
+  .empty-text { font-size: 16px; font-weight: 600; }
+  .empty-sub { font-size: 13px; margin-top: 6px; }
+
+  /* Clear done button */
+  .clear-btn {
+    width: 100%; margin-top: 16px;
+    padding: 14px;
+    background: none; border: 1px solid var(--border);
+    border-radius: 12px; color: var(--muted);
+    font-family: var(--font); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all .2s;
+  }
+  .clear-btn:active { background: var(--card); }
+
+  /* Inventory tab */
+  .inv-section { margin-bottom: 24px; }
+  .inv-section-title {
+    font-size: 13px; font-weight: 700;
+    color: var(--accent); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .inv-section-title::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  .inv-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px; gap: 10px;
+  }
+  .inv-name { font-size: 16px; font-weight: 600; flex: 1; }
+  .inv-amount {
+    font-family: var(--mono); font-size: 13px;
+    color: var(--muted); min-width: 60px; text-align: right;
+  }
+  .inv-actions { display: flex; gap: 6px; }
+  .small-btn {
+    width: 32px; height: 32px; border-radius: 8px; border: none;
+    font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity .15s;
+  }
+  .small-btn:active { opacity: .7; }
+  .btn-add-shop { background: rgba(88,166,255,.15); color: var(--accent); }
+  .btn-del-inv  { background: rgba(248,81,73,.1);  color: var(--red);    }
+
+  /* Loading spinner */
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .6s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast-container {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 999; display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none; width: 90%; max-width: 360px;
+  }
+  .toast {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 16px;
+    font-size: 14px; font-weight: 600;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    animation: toastIn .3s ease;
+    text-align: center;
+  }
+  @keyframes toastIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.error   { border-color: var(--red);   color: var(--red);   }
+
+  /* Offline banner */
+  .offline-banner {
+    background: rgba(210,153,34,.15); border-bottom: 1px solid var(--amber);
+    color: var(--amber); font-size: 13px; font-weight: 600;
+    text-align: center; padding: 8px;
+    display: none;
+  }
+  .offline-banner.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     SETUP OVERLAY
+══════════════════════════════════════════ -->
+<div id="setup-overlay">
+  <div class="setup-logo">🛒</div>
+  <div class="setup-title">Our List</div>
+  <div class="setup-sub">Set up once — use together.<br>Data is stored in your Google Sheet.</div>
+
+  <!-- Step 1: Google Apps Script -->
+  <div class="setup-step">
+    <div class="step-num">1</div>
+    <div class="step-title">Create Google Apps Script</div>
+    <div class="step-body">
+      1. Open <a href="https://sheets.google.com" target="_blank">sheets.google.com</a> → create a new spreadsheet.<br>
+      Name it <code>Our List</code>. Rename the first sheet to <code>Shopping</code>, add two more: <code>Inventory</code> and <code>Log</code>.<br><br>
+      2. Menu → <strong>Extensions → Apps Script</strong>.<br>
+      Delete all existing code and paste the contents of <code>Code.gs</code> included with this app.<br><br>
+      3. Click <strong>Save</strong> → <strong>Deploy → New deployment</strong>.<br>
+      Type: <code>Web app</code>. Access: <code>Anyone</code>. Click <strong>Deploy</strong>.<br><br>
+      4. Copy the deployment URL and paste it below:
+    </div>
+    <div class="setup-input-group">
+      <label class="setup-label">Apps Script URL</label>
+      <input class="setup-input" id="cfg-script-url" type="url"
+             placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
+  </div>
+
+  <!-- Step 2: Telegram -->
+  <div class="setup-step">
+    <div class="step-num">2</div>
+    <div class="step-title">Telegram notifications (optional)</div>
+    <div class="step-body">
+      1. Message <a href="https://t.me/BotFather" target="_blank">@BotFather</a> on Telegram → <code>/newbot</code>.<br>
+      You'll get a <strong>bot token</strong>.<br><br>
+      2. Create a group with people, add the bot to it.<br>
+      Send any message in the group, then open:<br>
+      <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code><br>
+      Find <code>"chat":{"id":-XXXXXXXXX}</code> — that's the <strong>Chat ID</strong> (usually negative).<br><br>
+      3. Paste both values below:
+    </div>
+    <div class="setup-input-group">
+      <label class="setup-label">Telegram Bot Token</label>
+      <input class="setup-input" id="cfg-tg-token" type="text"
+             placeholder="1234567890:ABCdef...">
+    </div>
+    <div class="setup-input-group" style="margin-top:8px">
+      <label class="setup-label">Telegram Chat ID</label>
+      <input class="setup-input" id="cfg-tg-chat" type="text"
+             placeholder="-1001234567890">
+    </div>
+  </div>
+
+  <!-- Step 3: Your name -->
+  <div class="setup-step">
+    <div class="step-num">3</div>
+    <div class="step-title">Who are you?</div>
+    <div class="step-body" style="margin-bottom:10px">
+      This name will be visible to your partner in notifications.
+    </div>
+    <div class="setup-name-row">
+      <button class="name-btn" onclick="selectName(this, 'me')">👩 me</button>
+      <button class="name-btn" onclick="selectName(this, 'friend')">👨 friend</button>
+    </div>
+    <div class="setup-input-group" style="margin-top:10px">
+      <label class="setup-label">Or type your own</label>
+      <input class="setup-input" id="cfg-name" type="text" placeholder="Name">
+    </div>
+  </div>
+
+  <button class="btn-save-setup" onclick="saveSetup()">Save and start →</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════ -->
+<div id="app" class="hidden">
+  <div class="offline-banner" id="offline-banner">⚡ No internet — changes will sync when back online</div>
+
+  <header class="app-header">
+    <div class="header-row">
+      <div class="app-title">🛒 Our List</div>
+      <div class="header-right">
+        <span class="user-chip" id="user-chip">—</span>
+        <button class="settings-btn" onclick="resetSetup()" title="Settings">⚙️</button>
+      </div>
+    </div>
+    <div class="tabs" style="margin-top:10px">
+      <button class="tab active" onclick="switchTab('shopping', this)">🛍 Shopping</button>
+      <button class="tab" onclick="switchTab('inventory', this)">🏠 Pantry</button>
+    </div>
+  </header>
+
+  <!-- ── SHOPPING TAB ── -->
+  <div id="tab-shopping" class="content">
+    <div class="status-bar">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Loading...</span>
+    </div>
+
+    <div class="add-bar">
+      <input class="add-input" id="shop-item-input" type="text"
+             placeholder="What to buy?" autocomplete="off" autocorrect="off"
+             onkeydown="if(event.key==='Enter') addShoppingItem()">
+      <input class="qty-input" id="shop-qty-input" type="text"
+             placeholder="qty" autocomplete="off">
+      <button class="add-btn" onclick="addShoppingItem()">＋</button>
+    </div>
+
+    <div class="section-label" id="shopping-count">Loading...</div>
+    <div class="items-list" id="shopping-list"></div>
+
+    <button class="clear-btn" id="clear-done-btn" onclick="clearDone()" style="display:none">
+      ✓ Clear purchased
+    </button>
+  </div>
+
+  <!-- ── INVENTORY TAB ── -->
+  <div id="tab-inventory" class="content" style="display:none">
+    <div class="add-bar">
+      <input class="add-input" id="inv-item-input" type="text"
+             placeholder="Item name" autocomplete="off"
+             onkeydown="if(event.key==='Enter') addInventoryItem()">
+      <input class="qty-input" id="inv-qty-input" type="text"
+             placeholder="qty" autocomplete="off">
+      <button class="add-btn" onclick="addInventoryItem()">＋</button>
+    </div>
+
+    <!-- Section selector -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;scrollbar-width:none">
+      <button class="name-btn active" id="inv-sec-btn-Refrigerator" onclick="selectInvSection('Refrigerator',this)" style="padding:8px 14px;font-size:13px;min-width:auto">🧊 Fridge</button>
+      <button class="name-btn" id="inv-sec-btn-Cabinets" onclick="selectInvSection('Cabinets',this)" style="padding:8px 14px;font-size:13px;min-width:auto">🗄 Cabinets</button>
+      <button class="name-btn" id="inv-sec-btn-Basement" onclick="selectInvSection('Basement',this)" style="padding:8px 14px;font-size:13px;min-width:auto">📦 Basement</button>
+    </div>
+
+    <div id="inventory-list"></div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ══════════════════════════════════════════
+// CONFIG & STATE
+// ══════════════════════════════════════════
+const CFG_KEY = 'pantry_config_v2';
+let cfg = null;
+
+let shoppingItems = [];   // {id, name, qty, done, addedBy, ts}
+let inventoryItems = [];  // {id, section, name, amount, unit}
+let currentInvSection = 'Refrigerator';
+let syncing = false;
+
+// Offline queue
+let offlineQueue = JSON.parse(localStorage.getItem('pantry_queue') || '[]');
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+function init() {
+  const stored = localStorage.getItem(CFG_KEY);
+  if (stored) {
+    try {
+      cfg = JSON.parse(stored);
+      showApp();
+    } catch(e) { showSetup(); }
+  } else {
+    showSetup();
+  }
+
+  window.addEventListener('online',  () => { hideBanner(); flushQueue(); });
+  window.addEventListener('offline', () => showBanner());
+  if (!navigator.onLine) showBanner();
+}
+
+function showSetup() {
+  document.getElementById('setup-overlay').classList.remove('hidden');
+  document.getElementById('app').classList.add('hidden');
+}
+
+function showApp() {
+  document.getElementById('setup-overlay').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('user-chip').textContent = cfg.name || '?';
+  loadAll();
+}
+
+function saveSetup() {
+  const url  = document.getElementById('cfg-script-url').value.trim();
+  const name = document.getElementById('cfg-name').value.trim();
+  const tgToken = document.getElementById('cfg-tg-token').value.trim();
+  const tgChat  = document.getElementById('cfg-tg-chat').value.trim();
+
+  if (!url) { toast('Paste the Apps Script URL!', 'error'); return; }
+  if (!name) { toast('Enter your name!', 'error'); return; }
+
+  cfg = { url, name, tgToken, tgChat };
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+  showApp();
+}
+
+function selectName(btn, name) {
+  document.querySelectorAll('.name-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('cfg-name').value = name;
+}
+
+function resetSetup() {
+  if (!confirm('Reset settings?')) return;
+  localStorage.removeItem(CFG_KEY);
+  showSetup();
+}
+
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-shopping').style.display  = tab==='shopping'  ? '' : 'none';
+  document.getElementById('tab-inventory').style.display = tab==='inventory' ? '' : 'none';
+  if (tab === 'inventory') renderInventory();
+}
+
+// ══════════════════════════════════════════
+// API CALLS
+// ══════════════════════════════════════════
+async function api(params) {
+  const url = cfg.url + '?' + new URLSearchParams(params);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+async function apiPost(body) {
+  const res = await fetch(cfg.url, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+// ══════════════════════════════════════════
+// STATUS
+// ══════════════════════════════════════════
+function setStatus(state, text) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot' + (state === 'ok' ? '' : state === 'error' ? ' error' : ' loading');
+  document.getElementById('status-text').textContent = text;
+}
+
+// ══════════════════════════════════════════
+// LOAD
+// ══════════════════════════════════════════
+async function loadAll() {
+  setStatus('loading', 'Syncing...');
+  try {
+    const data = await api({ action: 'getAll' });
+    shoppingItems  = data.shopping  || [];
+    inventoryItems = data.inventory || [];
+    renderShopping();
+    renderInventory();
+    setStatus('ok', 'Synced · ' + fmt(new Date()));
+  } catch(e) {
+    setStatus('error', 'Offline · local data');
+    loadLocal();
+  }
+}
+
+function loadLocal() {
+  const s = localStorage.getItem('pantry_shopping');
+  const i = localStorage.getItem('pantry_inventory');
+  if (s) shoppingItems  = JSON.parse(s);
+  if (i) inventoryItems = JSON.parse(i);
+  renderShopping();
+  renderInventory();
+}
+
+function saveLocal() {
+  localStorage.setItem('pantry_shopping',  JSON.stringify(shoppingItems));
+  localStorage.setItem('pantry_inventory', JSON.stringify(inventoryItems));
+}
+
+// ══════════════════════════════════════════
+// SHOPPING LIST
+// ══════════════════════════════════════════
+async function addShoppingItem() {
+  const inp = document.getElementById('shop-item-input');
+  const qinp = document.getElementById('shop-qty-input');
+  const name = inp.value.trim();
+  const qty  = qinp.value.trim();
+  if (!name) return;
+
+  const item = {
+    id: Date.now().toString(),
+    name, qty,
+    done: false,
+    addedBy: cfg.name,
+    ts: new Date().toISOString()
+  };
+
+  shoppingItems.unshift(item);
+  inp.value = ''; qinp.value = '';
+  renderShopping();
+  saveLocal();
+
+  await syncAction({ action: 'addShopping', item });
+  await sendTelegram(`🛒 ${cfg.name} добавил(а): *${name}*${qty ? ' — ' + qty : ''}`);
+}
+
+async function toggleDone(id) {
+  const item = shoppingItems.find(i => i.id === id);
+  if (!item) return;
+  item.done = !item.done;
+  renderShopping();
+  saveLocal();
+  await syncAction({ action: 'toggleDone', id, done: item.done });
+  if (item.done) {
+    await sendTelegram(`✅ ${cfg.name} купил(а): *${item.name}*`);
+  }
+}
+
+async function deleteShoppingItem(id) {
+  const item = shoppingItems.find(i => i.id === id);
+  shoppingItems = shoppingItems.filter(i => i.id !== id);
+  renderShopping();
+  saveLocal();
+  await syncAction({ action: 'deleteShopping', id });
+}
+
+async function clearDone() {
+  const ids = shoppingItems.filter(i => i.done).map(i => i.id);
+  shoppingItems = shoppingItems.filter(i => !i.done);
+  renderShopping();
+  saveLocal();
+  await syncAction({ action: 'clearDone', ids });
+}
+
+function renderShopping() {
+  const list = document.getElementById('shopping-list');
+  const countEl = document.getElementById('shopping-count');
+  const clearBtn = document.getElementById('clear-done-btn');
+
+  const pending = shoppingItems.filter(i => !i.done);
+  const done    = shoppingItems.filter(i => i.done);
+
+  countEl.textContent = pending.length
+    ? `${pending.length} item${pending.length===1?'':'s'} to buy`
+    : done.length ? 'All done 🎉' : 'List is empty';
+
+  clearBtn.style.display = done.length ? '' : 'none';
+
+  if (!shoppingItems.length) {
+    list.innerHTML = `<div class="empty">
+      <div class="empty-icon">🛒</div>
+      <div class="empty-text">List is empty</div>
+      <div class="empty-sub">Add something to buy</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = [...pending, ...done].map(item => `
+    <div class="item-card${item.done ? ' done' : ''}" id="card-${item.id}">
+      <button class="check-btn${item.done ? ' checked' : ''}"
+              onclick="toggleDone('${item.id}')">
+        ${item.done ? '✓' : ''}
+      </button>
+      <div class="item-text">
+        <div class="item-name">${esc(item.name)}</div>
+        <div class="item-meta">${item.qty ? item.qty + ' · ' : ''}${item.addedBy || ''}</div>
+      </div>
+      <div class="item-actions">
+        <button class="del-btn" onclick="deleteShoppingItem('${item.id}')">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+// INVENTORY
+// ══════════════════════════════════════════
+function selectInvSection(sec, btn) {
+  currentInvSection = sec;
+  document.querySelectorAll('[id^=inv-sec-btn-]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderInventory();
+}
+
+async function addInventoryItem() {
+  const inp  = document.getElementById('inv-item-input');
+  const qinp = document.getElementById('inv-qty-input');
+  const name = inp.value.trim();
+  const amount = qinp.value.trim();
+  if (!name) return;
+
+  const item = {
+    id: Date.now().toString(),
+    section: currentInvSection,
+    name, amount,
+    addedBy: cfg.name
+  };
+
+  inventoryItems.push(item);
+  inp.value = ''; qinp.value = '';
+  renderInventory();
+  saveLocal();
+  await syncAction({ action: 'addInventory', item });
+}
+
+async function deleteInventoryItem(id) {
+  inventoryItems = inventoryItems.filter(i => i.id !== id);
+  renderInventory();
+  saveLocal();
+  await syncAction({ action: 'deleteInventory', id });
+}
+
+async function addInventoryToShop(id) {
+  const inv = inventoryItems.find(i => i.id === id);
+  if (!inv) return;
+  const item = {
+    id: Date.now().toString(),
+    name: inv.name,
+    qty: inv.amount,
+    done: false,
+    addedBy: cfg.name,
+    ts: new Date().toISOString()
+  };
+  shoppingItems.unshift(item);
+  saveLocal();
+  renderShopping();
+  await syncAction({ action: 'addShopping', item });
+  await sendTelegram(`🛒 ${cfg.name} added from pantry: *${inv.name}*`);
+  toast(`${inv.name} → added to shopping list`, 'success');
+}
+
+const SECTION_LABELS = { Refrigerator:'🧊 Fridge', Cabinets:'🗄 Cabinets', Basement:'📦 Basement' };
+
+function renderInventory() {
+  const list = document.getElementById('inventory-list');
+  const items = inventoryItems.filter(i => i.section === currentInvSection);
+
+  if (!items.length) {
+    list.innerHTML = `<div class="empty">
+      <div class="empty-icon">${currentInvSection==='Refrigerator'?'🧊':currentInvSection==='Cabinets'?'🗄':'📦'}</div>
+      <div class="empty-text">Section is empty</div>
+      <div class="empty-sub">Add items stored here</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = items.map(item => `
+    <div class="inv-item" id="inv-${item.id}">
+      <div class="inv-name">${esc(item.name)}</div>
+      <div class="inv-amount">${item.amount || '—'}</div>
+      <div class="inv-actions">
+        <button class="small-btn btn-add-shop" onclick="addInventoryToShop('${item.id}')" title="Add to shopping list">🛒</button>
+        <button class="small-btn btn-del-inv"  onclick="deleteInventoryItem('${item.id}')" title="Delete">×</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+// SYNC
+// ══════════════════════════════════════════
+async function syncAction(body) {
+  if (!navigator.onLine) {
+    offlineQueue.push(body);
+    localStorage.setItem('pantry_queue', JSON.stringify(offlineQueue));
+    return;
+  }
+  try {
+    await apiPost(body);
+    toast('Saved ✓', 'success');
+  } catch(e) {
+    offlineQueue.push(body);
+    localStorage.setItem('pantry_queue', JSON.stringify(offlineQueue));
+    toast('Offline — will sync later', 'error');
+  }
+}
+
+async function flushQueue() {
+  if (!offlineQueue.length) return;
+  const q = [...offlineQueue];
+  offlineQueue = [];
+  localStorage.setItem('pantry_queue', '[]');
+  for (const body of q) {
+    try { await apiPost(body); }
+    catch(e) { offlineQueue.push(body); }
+  }
+  if (offlineQueue.length) {
+    localStorage.setItem('pantry_queue', JSON.stringify(offlineQueue));
+  } else {
+    toast('Synced ✓', 'success');
+    loadAll();
+  }
+}
+
+// ══════════════════════════════════════════
+// TELEGRAM
+// ══════════════════════════════════════════
+async function sendTelegram(text) {
+  if (!cfg.tgToken || !cfg.tgChat) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${cfg.tgToken}/sendMessage`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        chat_id: cfg.tgChat,
+        text, parse_mode: 'Markdown'
+      })
+    });
+  } catch(e) { /* silent */ }
+}
+
+// ══════════════════════════════════════════
+// AUTO-REFRESH (every 30s)
+// ══════════════════════════════════════════
+setInterval(() => {
+  if (document.visibilityState === 'visible' && navigator.onLine && cfg) loadAll();
+}, 30000);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && navigator.onLine && cfg) loadAll();
+});
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function fmt(d) {
+  return d.toLocaleTimeString('ru', {hour:'2-digit', minute:'2-digit'});
+}
+function plural(n, a, b, c) {
+  const m = n % 100;
+  if (m >= 11 && m <= 19) return c;
+  const r = n % 10;
+  if (r === 1) return a;
+  if (r >= 2 && r <= 4) return b;
+  return c;
+}
+function showBanner() { document.getElementById('offline-banner').classList.add('show'); }
+function hideBanner() { document.getElementById('offline-banner').classList.remove('show'); }
+
+function toast(msg, type='') {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+
+// ── Boot ──
+init();
+</script>
+</body>
+</html>
